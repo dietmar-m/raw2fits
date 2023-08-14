@@ -51,6 +51,7 @@ static int write_header(libraw_data_t *rawdata, fitsfile *outfile)
 					   "who took the image",&err);
 	fits_write_key_fixflt(outfile, "CAM-TEMP", rawdata->other.CameraTemperature,
 						  2, "camera temperature [C]", &err);
+	fits_write_date(outfile, &err);
 
 	return err;
 }
