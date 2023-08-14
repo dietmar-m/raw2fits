@@ -22,6 +22,9 @@ int print_header(libraw_data_t *rawdata)
 	printf("artist     = \"%s\"\n",rawdata->other.artist);
 	printf("timestamp  = %s",ctime(&rawdata->other.timestamp));
 	printf("cdesc      = %s\n",rawdata->idata.cdesc);
+	printf("cameratemp = %.2f\n",rawdata->other.CameraTemperature);
+	printf("sensortemp = %.2f\n",rawdata->other.SensorTemperature);
+	printf("sensortemp2= %.2f\n",rawdata->other.SensorTemperature2);
 	return 0;
 }
 
@@ -42,6 +45,11 @@ static int write_header(libraw_data_t *rawdata, fitsfile *outfile)
 			tm->tm_hour,tm->tm_min,tm->tm_sec);
 	fits_write_key_str(outfile, "DATE-OBS", buffer,
 					   "UTC start date of observation", &err);
+	fits_write_key_str(outfile, "OBSERVER", rawdata->other.artist,
+					   "Who took the image",&err);
+	fits_write_key_fixflt(outfile, "CAM-TEMP", rawdata->other.CameraTemperature,
+						  2, "[C] Camera temperature", &err);
+
 	return err;
 }
 
