@@ -45,21 +45,6 @@ static int write_header(libraw_data_t *rawdata, fitsfile *outfile)
 	return err;
 }
 
-/*
-static matrix_t *get_matrix(libraw_data_t *rawdata, int filter)
-{
-	static matrix_t RGBG[][2]={
-		{{0,0},{-1,-1}},
-		{{1,0},{0,1}},
-		{{1,1},{-1,-1}},
-	};
-
-	if(!strcmp(rawdata->idata.cdesc,"RGBG"))
-		return RGBG[filter];
-
-	return NULL;
-}
-*/
 
 static int get_matrix(libraw_data_t *rawdata, int filter, matrix_t **mat)
 {
@@ -81,11 +66,12 @@ static int get_matrix(libraw_data_t *rawdata, int filter, matrix_t **mat)
 }
 
 
-// for convenience
+// save some typing
 #define RAW_PIXEL(row, col, dx, dy) \
 	rawdata->rawdata.raw_image[(row*2+rawdata->sizes.top_margin+dy)*\
 							   rawdata->sizes.raw_width+col*2+\
 							   rawdata->sizes.left_margin+dx]
+
 
 int raw2fits(libraw_data_t *rawdata, char **filters, fitsfile **outfile)
 {
@@ -105,20 +91,6 @@ int raw2fits(libraw_data_t *rawdata, char **filters, fitsfile **outfile)
 
 	for(f=0; filters[f]; f++)
 	{
-		/*
-		matrix_t *mat2;
-		int n,i;
-
-		mat=get_matrix(rawdata,f);
-		n=get_matrix2(rawdata,f,&mat2);
-		for(i=0; i<n; i++)
-			printf("filter=%ld: %d %d, %d\n",f,i,mat2[i].dx,mat2[i].dy);
-		if(!mat)
-		{
-			err=-1;
-			break;
-		}
-		*/
 		int mat_c=get_matrix(rawdata,f,&mat);
 		if(!mat_c)
 		{
@@ -139,30 +111,9 @@ int raw2fits(libraw_data_t *rawdata, char **filters, fitsfile **outfile)
 			for(row=0; row<height; row++)
 				for(col=0; col<width; col++)
 				{
-					/*
-					switch(filter)
-					{
-					case 0: // red
-						pixel=RAW_PIXEL(row,col,0,0);
-						break;
-					case 1: // green
-						pixel=RAW_PIXEL(row,col,1,0)+RAW_PIXEL(row,col,0,1);
-						pixel/=2;
-						break;
-					case 2: //blue
-						pixel=RAW_PIXEL(row,col,1,1);
-						break;
-					}
-					*/
-					pixel=0;
-					/*
-					for(c=0; c<2 && mat[f][c].dx>=0; c++)
-						pixel+=RAW_PIXEL(row,col,mat[f][c].dx,mat[f][c].dy);
-					*/
-					//for(c=0; c<2 && mat[c].dx>=0; c++)
-					for(c=0; c<mat_c; c++)
+					for(pixel=0, c=0; c<mat_c; c++)
 						pixel+=RAW_PIXEL(row,col,mat[c].dx,mat[c].dy);
-					pixel/=c;
+					pixel/=mat_c;
 					data[row*width+col]=(ushort)pixel;
 				}
 			fits_write_img(outfile[f], TUSHORT, 1,
