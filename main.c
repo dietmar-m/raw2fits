@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
+#include <unistd.h>
 #include <libraw/libraw.h>
 #include <fitsio.h>
 
@@ -16,16 +17,35 @@ int usage(char *argv0)
 
 int main(int argc, char **argv)
 {
+	int opt;
+	int verbose=0;
 	libraw_data_t *rawdata;
 	int flags=0;
 	int err=0;
-	int argn;
+	char outname[NAME_MAX];
+	char *p;
+	char *filters[]={"R","G","B",NULL};
+	ssize_t n;
+	fitsfile *outfile[3];
+
 
 	if(argc < 2)
 	{
 		usage(argv[0]);
 		return -1;
 	}
+
+	while((opt=getopt(argc,argv,"v?"))>=0)
+		switch(opt)
+		{
+		case 'v':
+			verbose=1;
+			break;
+		case '?':
+		default:
+			usage(argv[0]);
+			return -1;
+		}
 
 	rawdata=libraw_init(flags);
 	if(!rawdata)
@@ -34,25 +54,20 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	for(argn=1; argn<argc; argn++)
+	for(; optind<argc; optind++)
 	{
-		err=libraw_open_file(rawdata,argv[argn]);
+		err=libraw_open_file(rawdata,argv[optind]);
 		if(!err)
 		{
-			char outname[NAME_MAX];
-			char *p;
-			char *filters[]={"R","G","B",NULL};
-			ssize_t n;
-			fitsfile *outfile[3];
-
-			print_header(rawdata);
-			p=strrchr(argv[1],'.');
+			if(verbose)
+				print_header(rawdata);
+			p=strrchr(argv[optind],'.');
 			if(p)
 				*p=0;
 
 			for(n=0; n<3; n++)
 			{
-				sprintf(outname, "!%s-%s.fits", argv[argn], filters[n]);
+				sprintf(outname, "!%s-%s.fits", argv[optind], filters[n]);
 				//printf("%s\n",outname);
 				if(fits_create_file(&outfile[n], outname, &err))
 				{
