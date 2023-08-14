@@ -36,19 +36,21 @@ static int write_header(libraw_data_t *rawdata, fitsfile *outfile)
 
 	sprintf(buffer, "%s %s", rawdata->idata.make, rawdata->idata.model);
 	fits_write_key_str(outfile, "INSTRUME", buffer,
-					   "Instrument used for acquisition", &err);
+					   "instrument used for acquisition", &err);
 	fits_write_key_lng(outfile, "EXPTIME", (long)rawdata->other.shutter,
-					   "[s] Total Exposure Time", &err);
+					   "exposure time [s]", &err);
+	fits_write_key_lng(outfile, "ISOSPEED", (long)rawdata->other.iso_speed,
+					   "ISO speed", &err);
 	tm=gmtime(&rawdata->other.timestamp);
 	sprintf(buffer,"%04d-%02d-%02dT%02d:%02d:%02d",
 			tm->tm_year+1900,tm->tm_mon+1,tm->tm_mday,
 			tm->tm_hour,tm->tm_min,tm->tm_sec);
 	fits_write_key_str(outfile, "DATE-OBS", buffer,
-					   "UTC start date of observation", &err);
+					   "UTC start of observation", &err);
 	fits_write_key_str(outfile, "OBSERVER", rawdata->other.artist,
-					   "Who took the image",&err);
+					   "who took the image",&err);
 	fits_write_key_fixflt(outfile, "CAM-TEMP", rawdata->other.CameraTemperature,
-						  2, "[C] Camera temperature", &err);
+						  2, "camera temperature [C]", &err);
 
 	return err;
 }
@@ -127,9 +129,10 @@ int raw2fits(libraw_data_t *rawdata, char **filters, fitsfile **outfile)
 			fits_write_img(outfile[f], TUSHORT, 1,
 						   width*height, data, &err);
 			if(!err)
-				write_header(rawdata,outfile[f]);
+				err=write_header(rawdata,outfile[f]);
 		}
-		else
+
+		if(err)
 			break;
 	}
 

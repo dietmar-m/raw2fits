@@ -68,7 +68,8 @@ int main(int argc, char **argv)
 			for(n=0; n<3; n++)
 			{
 				sprintf(outname, "!%s-%s.fits", argv[optind], filters[n]);
-				//printf("%s\n",outname);
+				if(verbose)
+					printf("writing %s\n",outname);
 				if(fits_create_file(&outfile[n], outname, &err))
 				{
 					fits_report_error(stderr, err);
