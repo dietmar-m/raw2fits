@@ -45,7 +45,7 @@ static int write_header(libraw_data_t *rawdata, fitsfile *outfile)
 	return err;
 }
 
-
+/*
 static matrix_t *get_matrix(libraw_data_t *rawdata, int filter)
 {
 	static matrix_t RGBG[][2]={
@@ -59,11 +59,33 @@ static matrix_t *get_matrix(libraw_data_t *rawdata, int filter)
 
 	return NULL;
 }
+*/
+
+static int get_matrix(libraw_data_t *rawdata, int filter, matrix_t **mat)
+{
+	static matrix_t RGBG[][2]={
+		{{0,0},{-1}},
+		{{1,0},{0,1}},
+		{{1,1},{-1}},
+	};
+
+	if(!strcmp(rawdata->idata.cdesc,"RGBG"))
+	{
+		*mat=RGBG[filter];
+		if((*mat)[1].dx>=0)
+			return 2;
+		else
+			return 1;
+	}
+	return 0;
+}
 
 
 // for convenience
 #define RAW_PIXEL(row, col, dx, dy) \
-	rawdata->rawdata.raw_image[(row*2+top+dy)*raw_width+col*2+left+dx]
+	rawdata->rawdata.raw_image[(row*2+rawdata->sizes.top_margin+dy)*\
+							   rawdata->sizes.raw_width+col*2+\
+							   rawdata->sizes.left_margin+dx]
 
 int raw2fits(libraw_data_t *rawdata, char **filters, fitsfile **outfile)
 {
@@ -75,18 +97,7 @@ int raw2fits(libraw_data_t *rawdata, char **filters, fitsfile **outfile)
 	int height=rawdata->sizes.height/2;
 	long naxes[]={width, height};
 	ushort *data; // image data
-	// save some typing
-	ushort raw_width=rawdata->sizes.raw_width;
-	ushort top=rawdata->sizes.top_margin;
-	ushort left=rawdata->sizes.left_margin;
-	// bayer pattern for EOS600D
-	/*
-	matrix_t mat[][2]={
-		{{0,0},{-1,-1}},
-		{{1,0},{0,1}},
-		{{1,1},{-1,-1}},
-	};
-	*/
+	matrix_t *mat; // bayer pattern
 
 	data=malloc(width*height*sizeof(*data));
 	if(!data)
@@ -94,10 +105,22 @@ int raw2fits(libraw_data_t *rawdata, char **filters, fitsfile **outfile)
 
 	for(f=0; filters[f]; f++)
 	{
-		matrix_t *mat;
+		/*
+		matrix_t *mat2;
+		int n,i;
 
 		mat=get_matrix(rawdata,f);
+		n=get_matrix2(rawdata,f,&mat2);
+		for(i=0; i<n; i++)
+			printf("filter=%ld: %d %d, %d\n",f,i,mat2[i].dx,mat2[i].dy);
 		if(!mat)
+		{
+			err=-1;
+			break;
+		}
+		*/
+		int mat_c=get_matrix(rawdata,f,&mat);
+		if(!mat_c)
 		{
 			err=-1;
 			break;
@@ -136,7 +159,8 @@ int raw2fits(libraw_data_t *rawdata, char **filters, fitsfile **outfile)
 					for(c=0; c<2 && mat[f][c].dx>=0; c++)
 						pixel+=RAW_PIXEL(row,col,mat[f][c].dx,mat[f][c].dy);
 					*/
-					for(c=0; c<2 && mat[c].dx>=0; c++)
+					//for(c=0; c<2 && mat[c].dx>=0; c++)
+					for(c=0; c<mat_c; c++)
 						pixel+=RAW_PIXEL(row,col,mat[c].dx,mat[c].dy);
 					pixel/=c;
 					data[row*width+col]=(ushort)pixel;
