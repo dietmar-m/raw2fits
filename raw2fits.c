@@ -3,6 +3,8 @@
 #include <libraw/libraw.h>
 #include <fitsio.h>
 
+#include "raw2fits.h"
+
 typedef struct { int dx,dy;} matrix_t;
 
 int print_header(libraw_data_t *rawdata)
