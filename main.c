@@ -14,9 +14,10 @@ int usage(char *argv0)
 {
 	fprintf(stderr, "USAGE:\n"
 			"%s [OPTIONS] <filename>...\n"
-			"Split the raw DSLR files given on the commandline into monochome FITS files\n"
+			"Split the raw DSLR files given on the commandline into monochrome FITS files\n"
 			"(one per input file and color) WITHOUT interpolating them.\n"
 			"That means the output images will be half of the size of the input images.\n"
+			"Any usefull information in the EXIF header will be preserved.\n\n"
 			"OPTIONS can be:\n"
 			"\t-v: increase verbose level\n"
 			"\t-?: this text\n",
