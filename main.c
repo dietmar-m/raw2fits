@@ -2,6 +2,8 @@
 #include <string.h>
 #include <limits.h>
 #include <unistd.h>
+#include <libgen.h>
+#include <sys/stat.h>
 #include <libraw/libraw.h>
 #include <fitsio.h>
 
@@ -19,22 +21,25 @@ int usage(char *argv0)
 			"That means the output images will be half of the size of the input images.\n"
 			"Any usefull information in the EXIF header will be preserved.\n\n"
 			"OPTIONS can be:\n"
-			"\t-v: increase verbose level\n"
-			"\t-?: this text\n",
+			" -v\t\tincrease verbose level\n"
+			" -D <dir>\tdirectory to write the files to, defaults to \".\"\n"
+			" -?\t\tthis text\n",
 			argv0);
 	return 0;
 }
 
 int main(int argc, char **argv)
 {
-	int opt;
-	libraw_data_t *rawdata;
-	int flags=0;
 	int err=0;
-	char outname[NAME_MAX];
+	int opt;
+	struct stat st;
+	int flags=0;
+	libraw_data_t *rawdata;
 	char *p;
-	char *filters[]={"R","G","B",NULL};
 	ssize_t n;
+	char *filters[]={"R","G","B",NULL};
+	char *destdir=".";
+	char outname[NAME_MAX];
 	fitsfile *outfile[3];
 
 
@@ -44,17 +49,27 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	while((opt=getopt(argc,argv,"v?"))>=0)
+	while((opt=getopt(argc,argv,"vD:?"))>=0)
 		switch(opt)
 		{
 		case 'v':
 			verbose++;
+			break;
+		case 'D':
+			destdir=optarg;
 			break;
 		case '?':
 		default:
 			usage(argv[0]);
 			return -1;
 		}
+
+	if(stat(destdir, &st) == ENOENT || mkdir(destdir, (mode_t)0755))
+	{
+		fprintf(stderr, "Directory \"%s\" does not exist and "
+				"cannot be created.\n", destdir);
+		return -1;
+	}
 
 	rawdata=libraw_init(flags);
 	if(!rawdata)
@@ -76,7 +91,8 @@ int main(int argc, char **argv)
 
 			for(n=0; n<3; n++)
 			{
-				sprintf(outname, "!%s-%s.fits", argv[optind], filters[n]);
+				sprintf(outname, "!%s/%s-%s.fits", destdir,
+						basename(argv[optind]), filters[n]);
 				if(verbose>0)
 					printf("writing %s\n",outname);
 				if(fits_create_file(&outfile[n], outname, &err))
