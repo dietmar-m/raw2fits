@@ -64,7 +64,7 @@ int main(int argc, char **argv)
 			return -1;
 		}
 
-	if(stat(destdir, &st) == ENOENT || mkdir(destdir, (mode_t)0755))
+	if(stat(destdir, &st) && mkdir(destdir, (mode_t)0755))
 	{
 		fprintf(stderr, "Directory \"%s\" does not exist and "
 				"cannot be created.\n", destdir);
