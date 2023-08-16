@@ -23,6 +23,7 @@ int print_header(libraw_data_t *rawdata)
 	printf("shutter    = %.0f\n",rawdata->other.shutter);
 	printf("artist     = \"%s\"\n",rawdata->other.artist);
 	printf("timestamp  = %s",ctime(&rawdata->other.timestamp));
+	printf("filters    = 0x%08x\n",rawdata->idata.filters);
 	printf("cdesc      = %s\n",rawdata->idata.cdesc);
 	printf("cameratemp = %.2f\n",rawdata->other.CameraTemperature);
 	printf("sensortemp = %.2f\n",rawdata->other.SensorTemperature);
