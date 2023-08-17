@@ -127,14 +127,14 @@ int raw2fits(libraw_data_t *rawdata, char **filters,
 			for(row=0; row<height; row++)
 				for(col=0; col<width; col++)
 				{
+					pixel=0;
 					for(bv=0; bv<binning; bv++)
 						for(bh=0; bh<binning; bh++)
-							for(pixel=0, c=0; c<mat_c; c++)
+							for(c=0; c<mat_c; c++)
 								pixel+=RAW_PIXEL(row*binning,col*binning,
-												 mat[c].dx+(binning*bh),
-												 mat[c].dy+(binning*bv));
-					pixel/=(bv*bh*mat_c);
-					data[row*width+col]=(ushort)pixel;
+												 mat[c].dx+2*bh,
+												 mat[c].dy+2*bv);
+					data[row*width+col]=(ushort)(pixel/(mat_c*binning*binning));
 				}
 			fits_write_img(outfile[f], TUSHORT, 1,
 						   width*height, data, &err);
