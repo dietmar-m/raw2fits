@@ -87,14 +87,15 @@ static int get_matrix(libraw_data_t *rawdata, int filter, matrix_t **mat)
 							   rawdata->sizes.left_margin+dx]
 
 
-int raw2fits(libraw_data_t *rawdata, char **filters, fitsfile **outfile)
+int raw2fits(libraw_data_t *rawdata, char **filters,
+			 fitsfile **outfile, uint binning)
 {
 	int err=0;
 	size_t f; // filter
 	// image dimensions
 	int naxis=2;
-	int width=rawdata->sizes.width/2;
-	int height=rawdata->sizes.height/2;
+	int width=rawdata->sizes.width/(2*binning);
+	int height=rawdata->sizes.height/(2*binning);
 	long naxes[]={width, height};
 	ushort *data; // image data
 	matrix_t *mat; // bayer pattern
@@ -119,15 +120,20 @@ int raw2fits(libraw_data_t *rawdata, char **filters, fitsfile **outfile)
 		if(!err)
 		{
 			size_t row,col;
+			uint bv,bh;
 			int pixel=0;
 			int c;
 
 			for(row=0; row<height; row++)
 				for(col=0; col<width; col++)
 				{
-					for(pixel=0, c=0; c<mat_c; c++)
-						pixel+=RAW_PIXEL(row,col,mat[c].dx,mat[c].dy);
-					pixel/=mat_c;
+					for(bv=0; bv<binning; bv++)
+						for(bh=0; bh<binning; bh++)
+							for(pixel=0, c=0; c<mat_c; c++)
+								pixel+=RAW_PIXEL(row*binning,col*binning,
+												 mat[c].dx+(binning*bh),
+												 mat[c].dy+(binning*bv));
+					pixel/=(bv*bh*mat_c);
 					data[row*width+col]=(ushort)pixel;
 				}
 			fits_write_img(outfile[f], TUSHORT, 1,
