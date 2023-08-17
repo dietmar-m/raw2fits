@@ -115,8 +115,15 @@ int raw2fits(libraw_data_t *rawdata, char **filters,
 
 		fits_create_img(outfile[f], SHORT_IMG, naxis, naxes, &err);
 		if(!err)
-			fits_write_key(outfile[f], TSTRING, "FILTER",
-						   filters[f], NULL, &err);
+		{
+			fits_write_key_str(outfile[f], "FILTER", filters[f],
+							   "filter", &err);
+			fits_write_key_lng(outfile[f], "XBINNING", binning,
+							   "binning factor x", &err);
+			fits_write_key_lng(outfile[f], "YBINNING", binning,
+							   "binning factor y", &err);
+		}
+
 		if(!err)
 		{
 			size_t row,col;
