@@ -23,6 +23,7 @@ int usage(char *argv0)
 			"OPTIONS can be:\n"
 			" -v\t\tincrease verbose level\n"
 			" -D <dir>\tdirectory to write the files to, defaults to \".\"\n"
+			" -B <bayer>\tbayer pattern to use, defaults to RGGB\n"
 			" -b <factor>\tbinning factor, defaults to 1\n"
 			" -?\t\tthis text\n",
 			argv0);
@@ -35,6 +36,7 @@ int main(int argc, char **argv)
 	int opt;
 	char *destdir=".";
 	char *p;
+	char *bayer="RGGB";
 	int binning=1;
 	struct stat st;
 	int flags=0;
@@ -51,7 +53,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	while((opt=getopt(argc,argv,"vD:b:?"))>=0)
+	while((opt=getopt(argc,argv,"vD:B:b:?"))>=0)
 		switch(opt)
 		{
 		case 'v':
@@ -59,6 +61,14 @@ int main(int argc, char **argv)
 			break;
 		case 'D':
 			destdir=optarg;
+			break;
+		case 'B':
+			if(strlen(optarg)!=4 || !strchr(optarg,'R') ||
+			   !strchr(optarg,'G') || !strchr(optarg,'B'))
+				fprintf(stderr,"Invalid bayer pattern, using default (%s)\n",
+						bayer);
+			else
+				bayer=optarg;
 			break;
 		case 'b':
 			binning=(int)strtol(optarg, &p, 10);
@@ -116,7 +126,7 @@ int main(int argc, char **argv)
 			{
 				err=libraw_unpack(rawdata);
 				if(!err)
-					raw2fits(rawdata,filters,outfile,binning);
+					raw2fits(rawdata,filters,bayer,outfile,binning);
 				else
 					fprintf(stderr,"%s\n",libraw_strerror(err));
 			}

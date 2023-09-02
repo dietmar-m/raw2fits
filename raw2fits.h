@@ -4,7 +4,7 @@
 extern int verbose;
 
 int print_header(libraw_data_t *rawdata);
-int raw2fits(libraw_data_t *rawdata, char **filters,
+int raw2fits(libraw_data_t *rawdata, char **filters, char *bayer,
 			 fitsfile **outfile, uint binning);
 
 #endif

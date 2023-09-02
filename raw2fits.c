@@ -60,23 +60,43 @@ static int write_header(libraw_data_t *rawdata, fitsfile *outfile)
 }
 
 
-static int get_matrix(libraw_data_t *rawdata, int filter, matrix_t **mat)
+static int get_matrix(char *bayer, int filter, matrix_t **mat)
 {
-	static matrix_t RGBG[][2]={
+	static matrix_t BGGR[][2]={
+		{{1,1},{-1}},
+		{{1,0},{0,1}},
+		{{0,0},{-1}},
+	};
+	static matrix_t GRBG[][2]={
+		{{1,0},{-1}},
+		{{0,0},{1,1}},
+		{{0,1},{-1}},
+	};
+	static matrix_t GBRG[][2]={
+		{{0,1},{-1}},
+		{{0,0},{1,1}},
+		{{1,0},{-1}},
+	};
+	static matrix_t RGGB[][2]={
 		{{0,0},{-1}},
 		{{1,0},{0,1}},
 		{{1,1},{-1}},
 	};
 
-	if(!strcmp(rawdata->idata.cdesc,"RGBG"))
-	{
-		*mat=RGBG[filter];
-		if((*mat)[1].dx>=0)
-			return 2;
-		else
-			return 1;
-	}
-	return 0;
+	if(!strcmp(bayer,"BGGR"))
+		*mat=BGGR[filter];
+	else if(!strcmp(bayer,"GRBG"))
+		*mat=GRBG[filter];
+	else if(!strcmp(bayer,"GBRG"))
+		*mat=GBRG[filter];
+	else if(!strcmp(bayer,"RGGB"))
+		*mat=RGGB[filter];
+	else
+		return -EINVAL;
+
+	if((*mat)[1].dx>=0)
+		return 2;
+	return 1;
 }
 
 
@@ -87,7 +107,7 @@ static int get_matrix(libraw_data_t *rawdata, int filter, matrix_t **mat)
 							   rawdata->sizes.left_margin+dx]
 
 
-int raw2fits(libraw_data_t *rawdata, char **filters,
+int raw2fits(libraw_data_t *rawdata, char **filters, char *bayer,
 			 fitsfile **outfile, uint binning)
 {
 	int err=0;
@@ -106,10 +126,10 @@ int raw2fits(libraw_data_t *rawdata, char **filters,
 
 	for(f=0; filters[f]; f++)
 	{
-		int mat_c=get_matrix(rawdata,f,&mat);
-		if(!mat_c)
+		int mat_c=get_matrix(bayer,f,&mat);
+		if(mat_c<0)
 		{
-			err=-1;
+			err=mat_c;
 			break;
 		}
 
@@ -141,7 +161,9 @@ int raw2fits(libraw_data_t *rawdata, char **filters,
 								pixel+=RAW_PIXEL(row*binning,col*binning,
 												 mat[c].dx+2*bh,
 												 mat[c].dy+2*bv);
-					data[row*width+col]=(ushort)(pixel/(mat_c*binning*binning));
+					pixel/=mat_c*binning*binning;
+					data[row*width+col]=(ushort)(pixel > USHRT_MAX ?
+												 USHRT_MAX : pixel);
 				}
 			fits_write_img(outfile[f], TUSHORT, 1,
 						   width*height, data, &err);
