@@ -62,26 +62,31 @@ static int write_header(libraw_data_t *rawdata, fitsfile *outfile)
 
 static int get_matrix(char *bayer, int filter, matrix_t **mat)
 {
-	static matrix_t BGGR[][2]={
+	static matrix_t BGGR[][5]={
+		{{0,0},{0,1},{1,0},{1,1},{-1}},
 		{{1,1},{-1}},
-		{{1,0},{0,1}},
+		{{1,0},{0,1},{-1}},
 		{{0,0},{-1}},
 	};
-	static matrix_t GRBG[][2]={
+	static matrix_t GRBG[][5]={
+		{{0,0},{0,1},{1,0},{1,1},{-1}},
 		{{1,0},{-1}},
-		{{0,0},{1,1}},
+		{{0,0},{1,1},{-1}},
 		{{0,1},{-1}},
 	};
-	static matrix_t GBRG[][2]={
+	static matrix_t GBRG[][5]={
+		{{0,0},{0,1},{1,0},{1,1},{-1}},
 		{{0,1},{-1}},
-		{{0,0},{1,1}},
+		{{0,0},{1,1},{-1}},
 		{{1,0},{-1}},
 	};
-	static matrix_t RGGB[][2]={
+	static matrix_t RGGB[][5]={
+		{{0,0},{0,1},{1,0},{1,1},{-1}},
 		{{0,0},{-1}},
-		{{1,0},{0,1}},
+		{{1,0},{0,1},{-1}},
 		{{1,1},{-1}},
 	};
+	int n;
 
 	if(!strcmp(bayer,"BGGR"))
 		*mat=BGGR[filter];
@@ -93,10 +98,15 @@ static int get_matrix(char *bayer, int filter, matrix_t **mat)
 		*mat=RGGB[filter];
 	else
 		return -EINVAL;
-
+/*
 	if((*mat)[1].dx>=0)
 		return 2;
 	return 1;
+*/
+	for(n=0; n<5; n++)
+		if((*mat)[n].dx < 0)
+			return n;
+	return 0;
 }
 
 
@@ -120,6 +130,8 @@ int raw2fits(libraw_data_t *rawdata, char **filters, char *bayer,
 	ushort *data; // image data
 	matrix_t *mat; // bayer pattern
 
+	printf("%s\n",__FUNCTION__);
+
 	data=malloc(width*height*sizeof(*data));
 	if(!data)
 		return -ENOMEM;
@@ -127,12 +139,13 @@ int raw2fits(libraw_data_t *rawdata, char **filters, char *bayer,
 	for(f=0; filters[f]; f++)
 	{
 		int mat_c=get_matrix(bayer,f,&mat);
-		if(mat_c<0)
+		if(mat_c<=0)
 		{
 			err=mat_c;
 			break;
 		}
 
+		printf("filter=%s, mat_c=%d\n", filters[f], mat_c);
 		fits_create_img(outfile[f], SHORT_IMG, naxis, naxes, &err);
 		if(!err)
 		{

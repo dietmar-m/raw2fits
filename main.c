@@ -9,6 +9,7 @@
 
 #include "raw2fits.h"
 
+#define FILTERS_MAX 4
 
 int verbose=0;
 
@@ -42,9 +43,9 @@ int main(int argc, char **argv)
 	int flags=0;
 	libraw_data_t *rawdata;
 	ssize_t n;
-	char *filters[]={"R","G","B",NULL};
+	char *filters[]={"L","R","G","B",NULL};
 	char outname[NAME_MAX];
-	fitsfile *outfile[3];
+	fitsfile *outfile[FILTERS_MAX];
 
 
 	if(argc < 2)
@@ -109,7 +110,7 @@ int main(int argc, char **argv)
 			if(p)
 				*p=0;
 
-			for(n=0; n<3; n++)
+			for(n=0; n<FILTERS_MAX; n++)
 			{
 				sprintf(outname, "!%s/%s-%s.fits", destdir,
 						basename(argv[optind]), filters[n]);
@@ -122,7 +123,7 @@ int main(int argc, char **argv)
 				}
 			}
 
-			if(n==rawdata->idata.colors)
+			if(n==FILTERS_MAX/*rawdata->idata.colors*/)
 			{
 				err=libraw_unpack(rawdata);
 				if(!err)
